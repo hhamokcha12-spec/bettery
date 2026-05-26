@@ -93,11 +93,7 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             try {
                 kotlinx.coroutines.delay(650)
                 val intent = Intent(application, HyperChargeService::class.java)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    application.startForegroundService(intent)
-                } else {
-                    application.startService(intent)
-                }
+                application.startService(intent)
                 HyperChargeService.addLog("⚡ HyperCharge Engine fully initialized!")
             } catch (e: Exception) {
                 e.printStackTrace()

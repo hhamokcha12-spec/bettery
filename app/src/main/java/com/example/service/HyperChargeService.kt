@@ -109,21 +109,8 @@ class HyperChargeService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception starting foreground: ${e.message}")
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    startForeground(
-                        NOTIFICATION_ID,
-                        notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                    )
-                } else {
-                    startForeground(NOTIFICATION_ID, notification)
-                }
-            } catch (ex: Exception) {
-                Log.e(TAG, "Normal startForeground fallback failed: ${ex.message}")
-            }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Optional startForeground deferred or restricted: ${e.message}")
         }
 
         val filter = IntentFilter().apply {
@@ -261,11 +248,15 @@ class HyperChargeService : Service() {
         }
         liveChargeCurveType.value = curve
 
-        val currentFormatStatus = if (isCharging) "Charging" else "Battery Powered"
-        val notificationText = "Battery: $batteryPct% | Temp: $temp°C | $currentFormatStatus"
-        val notification = createNotification(notificationText)
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        try {
+            val currentFormatStatus = if (isCharging) "Charging" else "Battery Powered"
+            val notificationText = "Battery: $batteryPct% | Temp: $temp°C | $currentFormatStatus"
+            val notification = createNotification(notificationText)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to update notification: ${t.message}")
+        }
     }
 
     private fun triggerFastChargeOptimizations() {
@@ -317,7 +308,7 @@ class HyperChargeService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("HyperCharge Deep Optimization Engine")
             .setContentText(contentText)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_charging)
+            .setSmallIcon(com.example.R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .build()
         }
@@ -336,21 +327,8 @@ class HyperChargeService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception starting foreground in onStartCommand: ${e.message}")
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    startForeground(
-                        NOTIFICATION_ID,
-                        notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                    )
-                } else {
-                    startForeground(NOTIFICATION_ID, notification)
-                }
-            } catch (ex: Exception) {
-                Log.e(TAG, "Normal startForeground fallback in onStartCommand failed: ${ex.message}")
-            }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Optional startForeground in onStartCommand deferred or restricted: ${e.message}")
         }
         return START_STICKY
     }

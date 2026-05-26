@@ -42,6 +42,8 @@ import kotlinx.coroutines.delay
 import android.content.ClipboardManager
 import android.content.ClipData
 import android.content.Context
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 // MULTI-LANGUAGE BILINGUAL DICTIONARY IN COGNITIVE ARABIC / ENGLISH
 fun getLabel(key: String, lang: String): String {
@@ -161,6 +163,14 @@ fun getLabel(key: String, lang: String): String {
 fun MainChargeScreen(viewModel: ChargeViewModel) {
     var activeTab by remember { mutableStateOf(0) }
 
+    // Persistent startup/background crash listener
+    val context = LocalContext.current
+    var crashLog by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("hypercharge_crash_prefs", Context.MODE_PRIVATE)
+        crashLog = prefs.getString("last_crash", null)
+    }
+
     // Collect States
     val batteryPct by viewModel.liveBatteryLevel.collectAsStateWithLifecycle()
     val temp by viewModel.liveTemperature.collectAsStateWithLifecycle()
@@ -206,6 +216,84 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
     val chargerAmber = Color(0xFFFF9F0A)
     val thermalCrimson = Color(0xFFFF453A)
     val textMuted = Color(0xFF8E9EB6)
+
+    if (crashLog != null) {
+        AlertDialog(
+            onDismissRequest = { /* Modal */ },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Crash Warning",
+                        tint = Color(0xFFFF453A),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Core Diagnostic Error Report",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "A previous run encountered an uncaught engine or system exception. Please copy details to solve the issue:",
+                        color = Color(0xFF8E9EB6),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 240.dp)
+                            .background(Color(0xFF0C101B), RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFFFF453A).copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        val scrollState = rememberScrollState()
+                        Text(
+                            text = crashLog ?: "",
+                            color = Color(0xFFFF9F0A),
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.verticalScroll(scrollState)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        try {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("HyperCharge Crash Log", crashLog)
+                            clipboard.setPrimaryClip(clip)
+                        } catch (t: Throwable) {
+                            t.printStackTrace()
+                        }
+                    }
+                ) {
+                    Text("Copy Code Log", color = Color(0xFF00FFCC), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val prefs = context.getSharedPreferences("hypercharge_crash_prefs", Context.MODE_PRIVATE)
+                        prefs.edit().remove("last_crash").apply()
+                        crashLog = null
+                    }
+                ) {
+                    Text("Clear & Dismiss", color = Color(0xFFFF453A))
+                }
+            },
+            containerColor = Color(0xFF161C2C),
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 
     Scaffold(
         topBar = {

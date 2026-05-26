@@ -25,6 +25,22 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Configure process-global Uncaught Exception Handler to catch and persist any background/foreground failures
+    val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+    Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+        android.util.Log.e("HYPERCHARGE_CRASH", "Uncaught Exception in process on thread ${thread.name}", throwable)
+        try {
+            val prefs = getSharedPreferences("hypercharge_crash_prefs", android.content.Context.MODE_PRIVATE)
+            val writer = java.io.StringWriter()
+            val printWriter = java.io.PrintWriter(writer)
+            throwable.printStackTrace(printWriter)
+            val stackTraceStr = writer.toString()
+            prefs.edit().putString("last_crash", stackTraceStr).commit()
+        } catch (ignored: Throwable) {
+        }
+        defaultHandler?.uncaughtException(thread, throwable)
+    }
+
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
