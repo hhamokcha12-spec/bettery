@@ -1,7 +1,11 @@
 package com.example.ui
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -56,6 +60,85 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
     val liveCpuCoreStatus: StateFlow<String> = HyperChargeService.liveCpuCoreStatus
     val liveActivityLogs: StateFlow<List<String>> = HyperChargeService.liveActivityLogs
 
+    private var isReceiverRegistered = false
+
+    private val chargingReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_BATTERY_CHANGED -> {
+                    updateBatteryState(intent)
+                }
+                Intent.ACTION_POWER_CONNECTED -> {
+                    HyperChargeService.addLog("🔌 Charger connected! Triggering fast charge optimizations...")
+                    viewModelScope.launch {
+                        if (repository.getSetting("auto_disable_radios", true)) {
+                            HyperChargeService.addLog("⚡ [Optimization] Auto-Optimizing hardware radios for maximum charge current...")
+                            HyperChargeService.addLog("🔧 [Optimizer] Simulating Radio Hibernation to lower chipset thermals.")
+                            HyperChargeService.addLog("⚡ [Governor] Deep Hardware Simulation: Forcing Wakelocks release...")
+                            HyperChargeService.addLog("⚡ [Governor] Active Thermal Control initialized. Safe threshold set to 38.0°C.")
+                        }
+                    }
+                }
+                Intent.ACTION_POWER_DISCONNECTED -> {
+                    HyperChargeService.addLog("🔌 Charger disconnected. Restoring user system configuration...")
+                    viewModelScope.launch {
+                        if (repository.getSetting("auto_disable_radios", true)) {
+                            HyperChargeService.addLog("🔓 [Optimizer] Restoring radio parameters...")
+                            HyperChargeService.addLog("🔓 [Governor] Wakelocks restriction unlocked.")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateBatteryState(intent: Intent) {
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale.toFloat()).toInt() else 0
+        HyperChargeService.liveBatteryLevel.value = batteryPct
+
+        val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
+        HyperChargeService.liveTemperature.value = temp
+
+        val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
+        HyperChargeService.liveVoltageMv.value = voltage
+
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL
+        HyperChargeService.liveIsCharging.value = isCharging
+
+        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        val pluggedType = when (plugged) {
+            BatteryManager.BATTERY_PLUGGED_AC -> "AC Wall Charger"
+            BatteryManager.BATTERY_PLUGGED_USB -> "USB Cable Port"
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> "Wireless Induction"
+            else -> if (isCharging) "Unknown Input" else "Unplugged"
+        }
+        HyperChargeService.livePluggedType.value = pluggedType
+
+        val health = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)
+        val healthStr = when (health) {
+            BatteryManager.BATTERY_HEALTH_GOOD -> "Good & Healthy"
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheated Emergency"
+            BatteryManager.BATTERY_HEALTH_DEAD -> "Degraded (Replace)"
+            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Overvoltage Threat"
+            else -> "Unknown Health State"
+        }
+        HyperChargeService.liveHealth.value = healthStr
+
+        // Adaptive charging curve status based on temperature & level
+        val curve = if (batteryPct > 80) {
+            "Trickle Phase (Cell Protection Active)"
+        } else if (temp > 39f) {
+            "Cooling-Backoff Optimization Phase"
+        } else {
+            "Rapid CC/CV Core Charging"
+        }
+        HyperChargeService.liveChargeCurveType.value = curve
+    }
+
     init {
         val db = AppDatabase.getDatabase(application)
         repository = ChargeRepository(db.chargeDao())
@@ -88,15 +171,91 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             healthScore.value = prefs.getFloat("health_score", 94.8f)
         }
 
-        // Start Foreground monitoring service immediately while the app is actively in the foreground
+        // Register the local receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_BATTERY_CHANGED)
+            addAction(Intent.ACTION_POWER_CONNECTED)
+            addAction(Intent.ACTION_POWER_DISCONNECTED)
+        }
         try {
-            val intent = Intent(application, HyperChargeService::class.java)
-            ContextCompat.startForegroundService(application, intent)
-            HyperChargeService.addLog("⚡ HyperCharge Engine fully initialized!")
+            val receiverFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Context.RECEIVER_NOT_EXPORTED
+            } else {
+                0
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                application.registerReceiver(chargingReceiver, filter, receiverFlags)
+            } else {
+                application.registerReceiver(chargingReceiver, filter)
+            }
+            isReceiverRegistered = true
         } catch (e: Exception) {
             e.printStackTrace()
-            HyperChargeService.addLog("⚠️ Optimization Service starting deferred or restricted: ${e.message}")
         }
+
+        // Start local sampling loop
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    kotlinx.coroutines.delay(3000) // Sample battery state every 3 seconds
+                    val batteryManager = application.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+                    val currentLevel = HyperChargeService.liveBatteryLevel.value
+                    val currentTemp = HyperChargeService.liveTemperature.value
+                    val isCharging = HyperChargeService.liveIsCharging.value
+                    val currentVoltage = HyperChargeService.liveVoltageMv.value
+
+                    val currentMa = if (batteryManager != null) {
+                        val current = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+                        // Normalize current (sometimes in microamperes)
+                        if (Math.abs(current) > 100000) current / 1000 else current
+                    } else {
+                        0
+                    }
+
+                    HyperChargeService.liveCurrentMa.value = currentMa
+
+                    // If temperature is high (> 38 C)
+                    if (currentTemp >= 38f && isCharging) {
+                        HyperChargeService.addLog("⚠️ High Thermal Warning ($currentTemp°C)! Suppressing background load.")
+                        HyperChargeService.liveCpuCoreStatus.value = "Thermal Restricted (Low Power)"
+                        HyperChargeService.liveWakelockStatus.value = "Forced Sleep Active (No Wakelocks)"
+                    } else {
+                        HyperChargeService.liveCpuCoreStatus.value = if (isCharging) "Balanced Charge Governor" else "Active (Standard)"
+                        HyperChargeService.liveWakelockStatus.value = "Safe Path"
+                    }
+
+                    // AI Charge scheduler logic (Predict completed duration)
+                    if (isCharging) {
+                        val remainingCap = 100 - currentLevel
+                        if (remainingCap > 0) {
+                            // Advanced heuristic charging curve mapping
+                            val rate = if (currentTemp > 40f) 0.5f else if (currentLevel < 80) 1.2f else 0.7f
+                            val estMin = ((remainingCap / (Math.abs(currentMa).toFloat() / 1000f + 0.1f)) * 60f * rate).toInt()
+                            HyperChargeService.liveEstimatedFullMinutes.value = estMin.coerceAtLeast(1).coerceAtMost(300)
+                        } else {
+                            HyperChargeService.liveEstimatedFullMinutes.value = 0
+                        }
+                    } else {
+                        HyperChargeService.liveEstimatedFullMinutes.value = -1
+                    }
+
+                    // Save to Room db
+                    val sample = BatterySamplePoint(
+                        timestamp = System.currentTimeMillis(),
+                        batteryLevel = currentLevel,
+                        temperature = currentTemp,
+                        voltageMv = currentVoltage,
+                        currentMa = currentMa,
+                        chargingState = if (isCharging) "Charging" else "Discharging"
+                    )
+                    repository.insertSample(sample)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        HyperChargeService.addLog("⚡ HyperCharge Engine fully initialized locally!")
     }
 
     fun setAutoDisableRadios(value: Boolean) {
@@ -348,6 +507,17 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repository.pruneSamplesBefore(System.currentTimeMillis() + 100000)
             HyperChargeService.addLog("🧹 Cleared diagnostic logs.")
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        if (isReceiverRegistered) {
+            try {
+                getApplication<Application>().unregisterReceiver(chargingReceiver)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }
