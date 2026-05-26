@@ -1,8 +1,8 @@
 package com.example.ui
-
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
@@ -88,17 +88,14 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             healthScore.value = prefs.getFloat("health_score", 94.8f)
         }
 
-        // Start Foreground monitoring service with a slight delay so MainActivity is fully resumed and active
-        viewModelScope.launch {
-            try {
-                kotlinx.coroutines.delay(650)
-                val intent = Intent(application, HyperChargeService::class.java)
-                application.startService(intent)
-                HyperChargeService.addLog("⚡ HyperCharge Engine fully initialized!")
-            } catch (e: Exception) {
-                e.printStackTrace()
-                HyperChargeService.addLog("⚠️ Optimization Service starting deferred or restricted: ${e.message}")
-            }
+        // Start Foreground monitoring service immediately while the app is actively in the foreground
+        try {
+            val intent = Intent(application, HyperChargeService::class.java)
+            ContextCompat.startForegroundService(application, intent)
+            HyperChargeService.addLog("⚡ HyperCharge Engine fully initialized!")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            HyperChargeService.addLog("⚠️ Optimization Service starting deferred or restricted: ${e.message}")
         }
     }
 

@@ -101,16 +101,21 @@ class HyperChargeService : Service() {
         
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // API 34
-                startForeground(
-                    NOTIFICATION_ID, 
-                    notification, 
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+                try {
+                    startForeground(
+                        NOTIFICATION_ID, 
+                        notification, 
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                } catch (innerEx: Throwable) {
+                    Log.e(TAG, "Optional startForeground payload type rejected, using simple: ${innerEx.message}")
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
         } catch (e: Throwable) {
-            Log.e(TAG, "Optional startForeground deferred or restricted: ${e.message}")
+            Log.e(TAG, "Optional startForeground completely failed: ${e.message}")
         }
 
         val filter = IntentFilter().apply {
@@ -308,7 +313,7 @@ class HyperChargeService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("HyperCharge Deep Optimization Engine")
             .setContentText(contentText)
-            .setSmallIcon(com.example.R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_charging)
             .setOngoing(true)
             .build()
         }
@@ -319,16 +324,21 @@ class HyperChargeService : Service() {
         val notification = createNotification(notificationText)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(
-                    NOTIFICATION_ID, 
-                    notification, 
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+                try {
+                    startForeground(
+                        NOTIFICATION_ID, 
+                        notification, 
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                } catch (innerEx: Throwable) {
+                    Log.e(TAG, "Optional startForeground in onStartCommand payload type rejected, using simple: ${innerEx.message}")
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
         } catch (e: Throwable) {
-            Log.e(TAG, "Optional startForeground in onStartCommand deferred or restricted: ${e.message}")
+            Log.e(TAG, "Optional startForeground in onStartCommand completely failed: ${e.message}")
         }
         return START_STICKY
     }
