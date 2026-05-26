@@ -104,7 +104,7 @@ class HyperChargeService : Service() {
                 startForeground(
                     NOTIFICATION_ID, 
                     notification, 
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                 )
             } else {
                 startForeground(NOTIFICATION_ID, notification)
@@ -112,7 +112,15 @@ class HyperChargeService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Exception starting foreground: ${e.message}")
             try {
-                startForeground(NOTIFICATION_ID, notification)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        notification,
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             } catch (ex: Exception) {
                 Log.e(TAG, "Normal startForeground fallback failed: ${ex.message}")
             }
@@ -323,7 +331,7 @@ class HyperChargeService : Service() {
                 startForeground(
                     NOTIFICATION_ID, 
                     notification, 
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                 )
             } else {
                 startForeground(NOTIFICATION_ID, notification)
@@ -331,7 +339,15 @@ class HyperChargeService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Exception starting foreground in onStartCommand: ${e.message}")
             try {
-                startForeground(NOTIFICATION_ID, notification)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        notification,
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             } catch (ex: Exception) {
                 Log.e(TAG, "Normal startForeground fallback in onStartCommand failed: ${ex.message}")
             }
