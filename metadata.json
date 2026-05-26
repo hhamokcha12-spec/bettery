@@ -1,0 +1,6 @@
+{
+  "name": "HyperCharge Enterprise",
+  "description": "تطبيق متقدم لإدارة الطاقة وتخصيص الشحن الذكي وحماية صحة البطارية والتحكم الحراري",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
