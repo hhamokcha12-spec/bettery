@@ -98,7 +98,10 @@ fun getLabel(key: String, lang: String): String {
         "history_title" to "سجل عمليات الشحن التاريخية",
         "deep_linux_status" to "حالة واختبارات نواة نظام لينكس العميقة",
         "realtime_log_header" to "محاكي وحدة التحكم وأوامر الهايبر تشارج",
-        "no_shell_activity" to "لا توجد أنشطة نشطة حالياً. قم بتشغيل المميزات أو موازنة البطارية لدفق الأوامر الفورية..."
+        "no_shell_activity" to "لا توجد أنشطة نشطة حالياً. قم بتشغيل المميزات أو موازنة البطارية لدفق الأوامر الفورية...",
+        "real_actions_title" to "إجراءات توفير الطاقة الفعلية للنظام",
+        "sys_battery_saver_btn" to "تفعيل وضع توفير الطاقة للنظام",
+        "sys_display_btn" to "التحكم في سطوع الشاشة المتبقي"
     )
     
     val en = mapOf(
@@ -152,7 +155,10 @@ fun getLabel(key: String, lang: String): String {
         "history_title" to "REGISTRATION CHARGING HISTORY",
         "deep_linux_status" to "Deep Linux Kernel Status & Diagnostics",
         "realtime_log_header" to "HYPERCHARGE SHELL REAL-TIME CONSOLE",
-        "no_shell_activity" to "No shell activities logged. Hook system charger or toggle controls to stream live events..."
+        "no_shell_activity" to "No shell activities logged. Hook system charger or toggle controls to stream live events...",
+        "real_actions_title" to "Real System Power Saving Actions",
+        "sys_battery_saver_btn" to "Enable System Battery Saver",
+        "sys_display_btn" to "Control Display Brightness"
     )
     
     return if (lang == "ar") ar[key] ?: (en[key] ?: key) else en[key] ?: key
@@ -1299,6 +1305,59 @@ fun PowerAISchedules(
                             onCheckedChange = { viewModel.setPreserveBatteryHealth(it) },
                             colors = SwitchDefaults.colors(checkedThumbColor = accentCyan)
                         )
+                    }
+
+                    HorizontalDivider(
+                        color = Color.White.copy(alpha = 0.05f),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    // ACTUAL SYSTEM ACTIONS
+                    Text(
+                        getLabel("real_actions_title", appLanguage).uppercase(),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 11.sp,
+                        letterSpacing = 1.2.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    val context = LocalContext.current
+                    
+                    Button(
+                        onClick = { 
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_BATTERY_SAVER_SETTINGS)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = accentCyan.copy(alpha=0.15f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(getLabel("sys_battery_saver_btn", appLanguage), color = accentCyan, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Button(
+                        onClick = { 
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_DISPLAY_SETTINGS)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha=0.08f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(getLabel("sys_display_btn", appLanguage), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
