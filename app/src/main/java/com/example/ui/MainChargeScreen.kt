@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -186,6 +187,7 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
     // Persistent startup/background crash listener
     val context = LocalContext.current
     var crashLog by remember { mutableStateOf<String?>(null) }
+    var showAboutDialog by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("hypercharge_crash_prefs", Context.MODE_PRIVATE)
         crashLog = prefs.getString("last_crash", null)
@@ -315,6 +317,67 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
         )
     }
 
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "About Me",
+                        tint = accentCyan,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (appLanguage == "ar") "عن المطور" else "About Developer",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .background(accentCyan.copy(alpha=0.15f), androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("A.B", color = accentCyan, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "م احمد بكر",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "hhamokcha12@gmail.com",
+                        color = textMuted,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "+201032780407",
+                        color = textMuted,
+                        fontSize = 14.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text(if (appLanguage == "ar") "إغلاق" else "Close", color = accentCyan)
+                }
+            },
+            containerColor = cardBg,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -343,6 +406,13 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showAboutDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "About",
+                            tint = Color.White
+                        )
+                    }
                     Button(
                         onClick = {
                             viewModel.setAppLanguage(if (appLanguage == "ar") "en" else "ar")
