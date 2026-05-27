@@ -54,6 +54,18 @@ class MainActivity : ComponentActivity() {
         requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
       }
     }
+    
+    // Start foreground service
+    try {
+        val serviceIntent = android.content.Intent(this, com.example.service.HyperChargeService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 
     setContent {
       MyApplicationTheme {
