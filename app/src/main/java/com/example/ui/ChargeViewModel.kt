@@ -96,9 +96,11 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
         val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale.toFloat()).toInt() else 0
+        val previousLevel = HyperChargeService.liveBatteryLevel.value
         HyperChargeService.liveBatteryLevel.value = batteryPct
 
         val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
+        val previousTemp = HyperChargeService.liveTemperature.value
         HyperChargeService.liveTemperature.value = temp
 
         val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
@@ -108,6 +110,21 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
         val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                 status == BatteryManager.BATTERY_STATUS_FULL
         HyperChargeService.liveIsCharging.value = isCharging
+        
+        // Ringtone Alarms
+        val targetLimit = batteryChargeLimit.value
+        val limitAlarmEnabled = preserveBatteryHealth.value
+        val overheatAlarmEnabled = preventOverheat.value
+        
+        if (limitAlarmEnabled && isCharging && batteryPct >= targetLimit && previousLevel < targetLimit) {
+            HyperChargeService.addLog("🔔 Target Charge Limit ($targetLimit%) Reached!")
+            playNotificationSound()
+        }
+        
+        if (overheatAlarmEnabled && temp > 40.0f && previousTemp <= 40.0f) {
+            HyperChargeService.addLog("🔥 EXTREME THERMAL WARNING: ${temp}C. Unplug Device!")
+            playNotificationSound()
+        }
 
         val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
         val pluggedType = when (plugged) {
@@ -137,6 +154,16 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             "Rapid CC/CV Core Charging"
         }
         HyperChargeService.liveChargeCurveType.value = curve
+    }
+
+    private fun playNotificationSound() {
+        try {
+            val notification = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+            val r = android.media.RingtoneManager.getRingtone(getApplication(), notification)
+            r.play()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     init {

@@ -99,9 +99,16 @@ fun getLabel(key: String, lang: String): String {
         "deep_linux_status" to "حالة واختبارات نواة نظام لينكس العميقة",
         "realtime_log_header" to "محاكي وحدة التحكم وأوامر الهايبر تشارج",
         "no_shell_activity" to "لا توجد أنشطة نشطة حالياً. قم بتشغيل المميزات أو موازنة البطارية لدفق الأوامر الفورية...",
-        "real_actions_title" to "إجراءات توفير الطاقة الفعلية للنظام",
+        "real_actions_title" to "إجراءات توفير الطاقة الفعلية السريعة",
         "sys_battery_saver_btn" to "تفعيل وضع توفير الطاقة للنظام",
-        "sys_display_btn" to "التحكم في سطوع الشاشة المتبقي"
+        "sys_display_btn" to "التحكم في سطوع الشاشة المتبقي",
+        "wifi_settings_btn" to "إيقاف استنزاف Wi-Fi (اعدادات)",
+        "bt_settings_btn" to "إيقاف استنزاف بلوتوث (اعدادات)",
+        "sync_settings_btn" to "إيقاف المزامنة التلقائية (اعدادات)",
+        "alarm_limit_title" to "إنذار الشحن المكتمل",
+        "alarm_limit_desc" to "تشغيل تنبيه صوتي عند وصول البطارية إلى حد الشحن المستهدف (80% للحفاظ على العمر الافتراضي).",
+        "therm_alarm_title" to "إنذار الخطر الحراري",
+        "therm_alarm_desc" to "تشغيل تنبيه طوارئ إذا وصلت حرارة البطارية لأكثر من 40.0°م لإنقاذها من الإنتفاخ والتلف."
     )
     
     val en = mapOf(
@@ -156,9 +163,16 @@ fun getLabel(key: String, lang: String): String {
         "deep_linux_status" to "Deep Linux Kernel Status & Diagnostics",
         "realtime_log_header" to "HYPERCHARGE SHELL REAL-TIME CONSOLE",
         "no_shell_activity" to "No shell activities logged. Hook system charger or toggle controls to stream live events...",
-        "real_actions_title" to "Real System Power Saving Actions",
+        "real_actions_title" to "Real Quick Power Saving Actions",
         "sys_battery_saver_btn" to "Enable System Battery Saver",
-        "sys_display_btn" to "Control Display Brightness"
+        "sys_display_btn" to "Control Display Brightness",
+        "wifi_settings_btn" to "Stop Wi-Fi Drain (Settings)",
+        "bt_settings_btn" to "Stop Bluetooth Drain (Settings)",
+        "sync_settings_btn" to "Stop Auto-Sync (Settings)",
+        "alarm_limit_title" to "Completion Charge Alarm",
+        "alarm_limit_desc" to "Play an audio siren when battery hits the target threshold (80% protects chemical life).",
+        "therm_alarm_title" to "Thermal Danger Alarm",
+        "therm_alarm_desc" to "Play emergency audio if battery temperature exceeds 40.0°C to rescue it from bloating."
     )
     
     return if (lang == "ar") ar[key] ?: (en[key] ?: key) else en[key] ?: key
@@ -1256,13 +1270,13 @@ fun PowerAISchedules(
                     ) {
                         Column(modifier = Modifier.weight(0.85f)) {
                             Text(
-                                getLabel("thermal_desc", appLanguage),
+                                getLabel("therm_alarm_title", appLanguage),
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
                             Text(
-                                getLabel("thermal_desc", appLanguage),
+                                getLabel("therm_alarm_desc", appLanguage),
                                 color = textMuted,
                                 fontSize = 11.sp,
                                 lineHeight = 14.sp
@@ -1275,7 +1289,7 @@ fun PowerAISchedules(
                         )
                     }
 
-                    Divider(
+                    HorizontalDivider(
                         color = Color.White.copy(alpha = 0.05f),
                         modifier = Modifier.padding(vertical = 12.dp)
                     )
@@ -1288,13 +1302,13 @@ fun PowerAISchedules(
                     ) {
                         Column(modifier = Modifier.weight(0.85f)) {
                             Text(
-                                getLabel("ion_preserve", appLanguage),
+                                getLabel("alarm_limit_title", appLanguage),
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.White,
                                 fontSize = 14.sp
                             )
                             Text(
-                                getLabel("ion_desc", appLanguage),
+                                getLabel("alarm_limit_desc", appLanguage),
                                 color = textMuted,
                                 fontSize = 11.sp,
                                 lineHeight = 14.sp
@@ -1358,6 +1372,63 @@ fun PowerAISchedules(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(getLabel("sys_display_btn", appLanguage), color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { 
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha=0.08f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(getLabel("wifi_settings_btn", appLanguage), color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { 
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha=0.08f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(getLabel("bt_settings_btn", appLanguage), color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { 
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_SYNC_SETTINGS)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha=0.08f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(getLabel("sync_settings_btn", appLanguage), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
