@@ -59,6 +59,7 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
     val liveWakelockStatus: StateFlow<String> = HyperChargeService.liveWakelockStatus
     val liveCpuCoreStatus: StateFlow<String> = HyperChargeService.liveCpuCoreStatus
     val liveActivityLogs: StateFlow<List<String>> = HyperChargeService.liveActivityLogs
+    val isExtremeChargingActive: StateFlow<Boolean> = HyperChargeService.isExtremeChargingActive
 
     private var isReceiverRegistered = false
 
@@ -196,6 +197,7 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             batteryCycles.value = prefs.getInt("battery_cycles", 248)
             batteryWear.value = prefs.getFloat("battery_wear", 5.2f)
             healthScore.value = prefs.getFloat("health_score", 94.8f)
+            HyperChargeService.isExtremeChargingActive.value = prefs.getBoolean("is_extreme_charging_active", false)
         }
 
         // Register the local receiver
@@ -379,21 +381,27 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             repairStatus.value = if (isAr) "قتل العمليات الخفية المستنزفة في الخلفية وفحص الطاقة الحقيقية..." else "Force killing background operations & scanning Real Power..."
             HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] تعطيل الأنشطة الميتة ومخففات المعالج..." else "🔧 [Repair] Halting extreme wakelocks & orphaned processes...")
             
-            // Real interaction - Activity Manager cleanup
+            // Real interaction - Activity Manager cleanup on IO thread to prevent ANRs
             try {
-                val am = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                val pm = getApplication<Application>().packageManager
-                val packages = pm.getInstalledPackages(0)
-                var killedCount = 0
-                for (packageInfo in packages) {
-                    val appInfo = packageInfo.applicationInfo
-                    if (appInfo != null && packageInfo.packageName != getApplication<Application>().packageName && 
-                        (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) {
-                        am.killBackgroundProcesses(packageInfo.packageName)
-                        killedCount++
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val am = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                    val pm = getApplication<Application>().packageManager
+                    val packages = pm.getInstalledPackages(0)
+                    var killedCount = 0
+                    for (packageInfo in packages) {
+                        try {
+                            val appInfo = packageInfo.applicationInfo
+                            if (appInfo != null && packageInfo.packageName != getApplication<Application>().packageName && 
+                                (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) {
+                                am.killBackgroundProcesses(packageInfo.packageName)
+                                killedCount++
+                            }
+                        } catch (pkgEx: Exception) {
+                            pkgEx.printStackTrace()
+                        }
                     }
+                    HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] تم القضاء على $killedCount تطبيق يستهلك البطارية في الخلفية (تنظيف فعلي)!" else "🔧 [Repair] Killed $killedCount background rogue apps (Real Cleanup)!")
                 }
-                HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] تم القضاء على $killedCount تطبيق يستهلك البطارية في الخلفية (تنظيف فعلي)!" else "🔧 [Repair] Killed $killedCount background rogue apps (Real Cleanup)!")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -547,6 +555,22 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             )
             repository.insertSession(session)
             HyperChargeService.addLog("✅ Diagnostic Session recorded successfully!")
+        }
+    }
+
+    fun setExtremeChargingActive(value: Boolean) {
+        viewModelScope.launch {
+            val prefs = getApplication<Application>().getSharedPreferences("hypercharge_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("is_extreme_charging_active", value).apply()
+            HyperChargeService.isExtremeChargingActive.value = value
+            val logMsg = if (appLanguage.value == "ar") {
+                if (value) "⚡ تم تنشيط محرك الشحن فائق السرعة الحقيقي! تقييد السطوع وإرغام تطبيقات الخلفية بالبيات الهادئ فوراً." 
+                else "🔓 تم إيقاف تعزيز الشحن فائق السرعة. استعادة معلمات السطوع العادية."
+            } else {
+                if (value) "⚡ Smart Turbo Charging Engine Activated! Restricting screen brightness and freezing background CPU drains."
+                else "🔓 Turbo charging enhancement disabled. Restoring system state..."
+            }
+            HyperChargeService.addLog(logMsg)
         }
     }
 

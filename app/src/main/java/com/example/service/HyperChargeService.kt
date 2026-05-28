@@ -33,6 +33,7 @@ class HyperChargeService : Service() {
         val liveCpuCoreStatus = MutableStateFlow("High Performance")
         val liveActivityLogs = MutableStateFlow<List<String>>(emptyList())
         val isAutoRepairEnabled = MutableStateFlow(true)
+        val isExtremeChargingActive = MutableStateFlow(false)
 
         fun addLog(msg: String) {
             val list = liveActivityLogs.value.toMutableList()
@@ -147,7 +148,14 @@ class HyperChargeService : Service() {
                     }
                     liveCurrentMa.value = currentMa
 
-                    if (isAutoRepairEnabled.value && liveIsCharging.value) {
+                    if (isExtremeChargingActive.value && liveIsCharging.value) {
+                        val temp = liveTemperature.value
+                        if (temp > 35.0f) {
+                            performAutoRepair("Turbo Fast Charging Protection & Elevated Thermals ($temp °C)")
+                        } else {
+                            performAutoRepair("Turbo Fast Charging Active (Background CPU Minimization)")
+                        }
+                    } else if (isAutoRepairEnabled.value && liveIsCharging.value) {
                         val temp = liveTemperature.value
                         if (temp > 38.0f) {
                             performAutoRepair("High Temperature ($temp C)")
@@ -158,7 +166,8 @@ class HyperChargeService : Service() {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                delay(60000) // check every 60 seconds
+                val delayTime = if (isExtremeChargingActive.value) 15000L else 60000L
+                delay(delayTime) // check every 15 seconds if turbo active, else 60
             }
         }
     }
@@ -171,11 +180,15 @@ class HyperChargeService : Service() {
             val packages = pm.getInstalledPackages(0)
             var killedCount = 0
             for (packageInfo in packages) {
-                val appInfo = packageInfo.applicationInfo
-                if (appInfo != null && packageInfo.packageName != packageName && 
-                    (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) {
-                    am.killBackgroundProcesses(packageInfo.packageName)
-                    killedCount++
+                try {
+                    val appInfo = packageInfo.applicationInfo
+                    if (appInfo != null && packageInfo.packageName != packageName && 
+                        (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) {
+                        am.killBackgroundProcesses(packageInfo.packageName)
+                        killedCount++
+                    }
+                } catch (pkgEx: Exception) {
+                    pkgEx.printStackTrace()
                 }
             }
             addLog("🔧 [Auto-Repair] Suppressed $killedCount background processes.")
