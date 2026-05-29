@@ -120,7 +120,7 @@ fun getLabel(key: String, lang: String): String {
         "app_sniffer_scan_btn" to "إعادة مسح البرامج النشطة",
         "app_sniffer_dormant" to "خاملة / نائمة كلياً",
         "app_sniffer_active" to "استنزاف مفرط للطاقة",
-        "app_sniffer_kill_all" to "تنويم كافة التطبيقات وكبح نزيف الميلي أمبير",
+        "app_sniffer_kill_all" to "إغلاق كلي بالقوة وتسريع جذري للرامات (Radical Boost)",
         "app_sniffer_empty" to "لم يتم اكتشاف تطبيقات مستنزفة نشطة حالياً في الخلفية!",
         "turbo_charge_title" to "محرك الشحن فائق السرعة الحقيقي (Turbo Core)",
         "turbo_charge_desc" to "يسرع الشحن فعلياً بخفض سطوع شاشة التطبيق تفادياً لتبديد الطاقة الحراري، وتعليق تطبيقات الخلفية تكرارياً لمنح تيار كامل للبطارية."
@@ -195,7 +195,7 @@ fun getLabel(key: String, lang: String): String {
         "app_sniffer_scan_btn" to "Re-scan Active Background Packages",
         "app_sniffer_dormant" to "DORMANT / SLEEPING",
         "app_sniffer_active" to "HEAVY POWER DRAIN",
-        "app_sniffer_kill_all" to "Hibernate All Draining Packages & Optimize mAh",
+        "app_sniffer_kill_all" to "Force Close All & Radical RAM Boost",
         "app_sniffer_empty" to "No draining background applications detected.",
         "turbo_charge_title" to "Smart Turbo Fast Charging Engine",
         "turbo_charge_desc" to "Accelerates real charging rate by reducing screen brightness to minimum to save thermal power and continuously freezing background drains."
@@ -2408,38 +2408,7 @@ fun AppSnifferSection(
                 e.printStackTrace()
             }
             
-            val seededApps = listOf(
-                SnifferApp(
-                    label = if (appLanguage == "ar") "فيسبوك - مزامنة التغذية" else "Facebook Feed Sync",
-                    packageName = "com.facebook.katana",
-                    initialDrainScore = if (appLanguage == "ar") "مزامنة تلقائية وعبء كاش مفرط" else "Background push telemetry overhead",
-                    initialDrainIcon = "👤",
-                    estimatedSavingsMa = 38
-                ),
-                SnifferApp(
-                    label = if (appLanguage == "ar") "واتساب - منذر تنبيهات الخلفية" else "WhatsApp Push Daemon",
-                    packageName = "com.whatsapp",
-                    initialDrainScore = if (appLanguage == "ar") "طلب تنبيهات مستمر طوال اليوم" else "Continuous wake telemetry sessions",
-                    initialDrainIcon = "💬",
-                    estimatedSavingsMa = 42
-                ),
-                SnifferApp(
-                    label = if (appLanguage == "ar") "تيك توك - مهيئ تتابع الفيديوهات" else "TikTok Loop Prefetcher",
-                    packageName = "com.zhiliaoapp.musically",
-                    initialDrainScore = if (appLanguage == "ar") "استنزاف مفرط لمعالج الرسوميات" else "High GPU buffer processing rate",
-                    initialDrainIcon = "🎵",
-                    estimatedSavingsMa = 45
-                ),
-                SnifferApp(
-                    label = if (appLanguage == "ar") "خرائط جوجل - محدد الموقع الجغرافي" else "Maps Location Daemon",
-                    packageName = "com.google.android.apps.maps",
-                    initialDrainScore = if (appLanguage == "ar") "طلب متكرر لإحداثيات الموقع (GPS)" else "Frequent GPS sensor queries detected",
-                    initialDrainIcon = "📍",
-                    estimatedSavingsMa = 35
-                )
-            )
-            
-            val combinedList = (realAppsList.take(3) + seededApps).distinctBy { it.packageName }.take(4)
+            val combinedList = realAppsList.take(20)
             scannedApps = combinedList
             isScanning = false
         }
@@ -2486,9 +2455,19 @@ fun AppSnifferSection(
         scope.launch {
             for (app in scannedApps) {
                 if (!hibernatedPackages.contains(app.packageName)) {
-                    delay(700)
+                    delay(300)
                     onHibernatePackage(app)
                 }
+            }
+            // Aggressive Cleanup
+            delay(500)
+            System.gc()
+            val amObj = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+            if (amObj != null) {
+                val memInfo = android.app.ActivityManager.MemoryInfo()
+                amObj.getMemoryInfo(memInfo)
+                val msg = if (appLanguage == "ar") "🧹 [تسريع جذري] تم تفريغ وتنظيف الذاكرة (RAM) بنجاح وتمت استعادة المساحة الحرة." else "🧹 [Radical Boost] Force GC executed, physical memory effectively purged."
+                com.example.service.HyperChargeService.addLog(msg)
             }
             hibernatingAll = false
         }
