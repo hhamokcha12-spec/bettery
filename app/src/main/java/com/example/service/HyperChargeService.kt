@@ -186,16 +186,17 @@ class HyperChargeService : Service() {
         try {
             // Genuine Hardware Tweak: Mute sounds to stop DAC drain during extreme charging
             if (isExtremeChargingActive.value) {
-                val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, 0)
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
-                audioManager.setStreamVolume(AudioManager.STREAM_RING, 0, 0)
-                if (!silent) addLog("🔇 [Hardware Tweak] DAC and Speakers Suppressed for 0mAh Audio Drain.")
+                try {
+                    val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, 0)
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+                    if (!silent) addLog("🔇 [Hardware Tweak] DAC and Speakers Suppressed for 0mAh Audio Drain.")
+                } catch (e: Exception) {}
             }
 
             val am = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
             val pm = packageManager
-            val packages = pm.getInstalledPackages(0)
+            val applications = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
             
             var killedCount = 0
             var freedRamMegabytes = 0L
@@ -204,12 +205,11 @@ class HyperChargeService : Service() {
             val memInfoBefore = android.app.ActivityManager.MemoryInfo()
             am.getMemoryInfo(memInfoBefore)
 
-            for (packageInfo in packages) {
+            for (appInfo in applications) {
                 try {
-                    val appInfo = packageInfo.applicationInfo
-                    if (appInfo != null && packageInfo.packageName != packageName && 
+                    if (appInfo.packageName != packageName && 
                         (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) {
-                        am.killBackgroundProcesses(packageInfo.packageName)
+                        am.killBackgroundProcesses(appInfo.packageName)
                         killedCount++
                     }
                 } catch (pkgEx: Exception) {

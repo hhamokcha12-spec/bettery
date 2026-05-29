@@ -142,7 +142,7 @@ fun getLabel(key: String, lang: String): String {
         "set_limit_btn" to "Set Charging Target Limit: ",
         "system_safeguards" to "System Shield Defenses",
         "radio_hibernate" to "Auto Radio Sleep Optimizer",
-        "radio_desc" to "Simulates hibernation in hardware wireless and wifi parameters when plugged, avoiding heat buildup.",
+        "radio_desc" to "Shuts down hardware wireless and background parameters when plugged, avoiding heat buildup.",
         "thermal_desc" to "Throttles background processing speeds and cooling routines if battery thermals breach extreme parameters.",
         "ion_preserve" to "Symmetric Electrochemical Control",
         "ion_desc" to "Regulates ion drift velocity to prevent crystal dendrite buildup in internal anode plates.",
@@ -240,10 +240,6 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
     val preserveBatteryHealth by viewModel.preserveBatteryHealth.collectAsStateWithLifecycle()
     val puristAmoledMode by viewModel.puristAmoledMode.collectAsStateWithLifecycle()
     val batteryChargeLimit by viewModel.batteryChargeLimit.collectAsStateWithLifecycle()
-    val activeAuditState by viewModel.activeAuditState.collectAsStateWithLifecycle()
-    val isRepairing by viewModel.isRepairing.collectAsStateWithLifecycle()
-    val repairProgress by viewModel.repairProgress.collectAsStateWithLifecycle()
-    val repairStatus by viewModel.repairStatus.collectAsStateWithLifecycle()
     val isExtremeChargingActive by viewModel.isExtremeChargingActive.collectAsStateWithLifecycle()
 
     // Interactive physical brightness control override for Real Turbo Charging Slower Thermal build-up
@@ -263,9 +259,6 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
 
     // BILINGUAL & STATS EXTRA INDICES
     val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
-    val batteryCycles by viewModel.batteryCycles.collectAsStateWithLifecycle()
-    val batteryWear by viewModel.batteryWear.collectAsStateWithLifecycle()
-    val healthScore by viewModel.healthScore.collectAsStateWithLifecycle()
     val selectedPowerProfile by viewModel.selectedPowerProfile.collectAsStateWithLifecycle()
     val diagnosticReportText by viewModel.diagnosticReportText.collectAsStateWithLifecycle()
 
@@ -655,9 +648,6 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                     thermalCrimson = thermalCrimson,
                     textMuted = textMuted,
                     appLanguage = appLanguage,
-                    batteryCycles = batteryCycles,
-                    batteryWear = batteryWear,
-                    healthScore = healthScore,
                     selectedPowerProfile = selectedPowerProfile
                 )
                 1 -> PowerAnalyticsSection(
@@ -693,10 +683,6 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                     cpuStatus = cpuStatus,
                     wakelockStatus = wakelockStatus,
                     logs = logs,
-                    activeAuditState = activeAuditState,
-                    isRepairing = isRepairing,
-                    repairProgress = repairProgress,
-                    repairStatus = repairStatus,
                     viewModel = viewModel,
                     cardBg = cardBg,
                     accentCyan = accentCyan,
@@ -729,9 +715,6 @@ fun EngineDashboard(
     thermalCrimson: Color,
     textMuted: Color,
     appLanguage: String,
-    batteryCycles: Int,
-    batteryWear: Float,
-    healthScore: Float,
     selectedPowerProfile: String
 ) {
     LazyColumn(
@@ -848,95 +831,7 @@ fun EngineDashboard(
             }
         }
 
-        // EXCLUSIVE STATS ROW: State of Health (SOH), Cycles, and Cellular Wear
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = cardBg),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, accentCyan.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = getLabel("soh", appLanguage),
-                            color = textMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "$healthScore%",
-                            color = accentCyan,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
 
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(30.dp)
-                            .background(Color.White.copy(alpha = 0.1f))
-                    )
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = getLabel("wear_level", appLanguage),
-                            color = textMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "$batteryWear%",
-                            color = if (batteryWear > 4.0f) thermalCrimson else accentCyan,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(30.dp)
-                            .background(Color.White.copy(alpha = 0.1f))
-                    )
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = getLabel("cycles", appLanguage),
-                            color = textMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "$batteryCycles",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
 
         item {
             // Live parameters grid
@@ -1655,16 +1550,6 @@ fun PowerAISchedules(
                     fontSize = 11.sp,
                     letterSpacing = 1.sp
                 )
-
-                Text(
-                    text = getLabel("generate_test", appLanguage),
-                    modifier = Modifier
-                        .clickable { viewModel.simulateHeavyChargeChargeCycle() }
-                        .padding(4.dp),
-                    color = accentCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
             }
         }
 
@@ -1751,10 +1636,6 @@ fun KernelDiagnosticsConsole(
     cpuStatus: String,
     wakelockStatus: String,
     logs: List<String>,
-    activeAuditState: String,
-    isRepairing: Boolean,
-    repairProgress: Float,
-    repairStatus: String,
     viewModel: ChargeViewModel,
     cardBg: Color,
     accentCyan: Color,
@@ -1799,254 +1680,7 @@ fun KernelDiagnosticsConsole(
             }
         }
 
-        // EXCLUSIVE: AI Cell Chemical & Electrolyte Integrity Auditor Panel
-        Card(
-            colors = CardDefaults.cardColors(containerColor = cardBg),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, accentCyan.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            getLabel("audit_section", appLanguage).uppercase(),
-                            fontWeight = FontWeight.Bold,
-                            color = accentCyan,
-                            fontSize = 10.sp,
-                            letterSpacing = 1.2.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            getLabel("ion_preserve", appLanguage),
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                    }
 
-                    Button(
-                        onClick = { viewModel.runBatteryChemicalAudit() },
-                        colors = ButtonDefaults.buttonColors(containerColor = accentCyan),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(getLabel("diagnostics_run", appLanguage).uppercase(), color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                        .padding(12.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Audit Status",
-                            tint = chargerAmber,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = activeAuditState,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
-                }
-            }
-        }
-
-        // EXCLUSIVE PARTICLE KINETIC MODULE: Interactive Lithium Ion alignment simulator chamber
-        IonCalibratorSection(
-            isRepairing = isRepairing,
-            progress = repairProgress,
-            appLanguage = appLanguage,
-            accentCyan = accentCyan,
-            chargerAmber = chargerAmber,
-            cardBg = cardBg,
-            textMuted = textMuted
-        )
-
-        // EXCLUSIVE: Software Tool to Repair & Calibrate Battery
-        Card(
-            colors = CardDefaults.cardColors(containerColor = cardBg),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, chargerAmber.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            getLabel("calib_section", appLanguage).uppercase(),
-                            fontWeight = FontWeight.Bold,
-                            color = chargerAmber,
-                            fontSize = 10.sp,
-                            letterSpacing = 1.2.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            getLabel("repair_engine", appLanguage),
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                    }
-
-                    if (isRepairing) {
-                        CircularProgressIndicator(
-                            color = chargerAmber,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        val repairNowText = if (appLanguage == "ar") "بدء المعايرة" else "REPAIR NOW"
-                        Button(
-                            onClick = { viewModel.runBatteryRepair() },
-                            colors = ButtonDefaults.buttonColors(containerColor = chargerAmber),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text(repairNowText, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (isRepairing || repairProgress > 0f) {
-                    LinearProgressIndicator(
-                        progress = repairProgress,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp),
-                        color = chargerAmber,
-                        trackColor = Color.White.copy(alpha = 0.1f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                        .padding(12.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Repair Status",
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = repairStatus,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            maxLines = 2,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        // EXCLUSIVE ARCHIVE EXPORTER: Issue & Copy Official Calibration Certificate
-        Card(
-            colors = CardDefaults.cardColors(containerColor = cardBg),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            getLabel("cert_result", appLanguage).uppercase(),
-                            fontWeight = FontWeight.Bold,
-                            color = accentCyan,
-                            fontSize = 10.sp,
-                            letterSpacing = 1.2.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            getLabel("generate_cert", appLanguage),
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Button(
-                        onClick = { viewModel.generateBatteryCertificate() },
-                        colors = ButtonDefaults.buttonColors(containerColor = accentCyan),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        val runCertText = if (appLanguage == "ar") "استخراج" else "EXPORT"
-                        Text(runCertText, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                    }
-                }
-
-                if (diagnosticReportText.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.Black, RoundedCornerShape(8.dp))
-                            .border(1.dp, accentCyan.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                            .padding(12.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = diagnosticReportText,
-                                color = accentCyan,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                lineHeight = 15.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    val clip = ClipData.newPlainText("HyperCharge Diagnostics", diagnosticReportText)
-                                    clipboard.setPrimaryClip(clip)
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text(getLabel("cert_copy", appLanguage), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         // Active State Matrices
         Card(
@@ -2173,171 +1807,7 @@ fun KernelDiagnosticsConsole(
     }
 }
 
-@Composable
-fun IonCalibratorSection(
-    isRepairing: Boolean,
-    progress: Float,
-    appLanguage: String,
-    accentCyan: Color,
-    chargerAmber: Color,
-    cardBg: Color,
-    textMuted: Color
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, accentCyan.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = getLabel("ion_alignment_title", appLanguage).uppercase(),
-                fontWeight = FontWeight.Bold,
-                color = accentCyan,
-                fontSize = 11.sp,
-                letterSpacing = 1.2.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = getLabel("ion_alignment_desc", appLanguage),
-                color = textMuted,
-                fontSize = 11.sp,
-                lineHeight = 15.sp
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val infiniteTransition = rememberInfiniteTransition(label = "ion_motion")
-            val pulseFloat by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 3000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "pulse"
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val width = size.width
-                    val height = size.height
-
-                    // Draw Cathode (-) plate on the left
-                    drawRect(
-                        color = Color(0xFFFF453A).copy(alpha = 0.2f),
-                        topLeft = Offset(0f, 0f),
-                        size = Size(15.dp.toPx(), height)
-                    )
-                    drawLine(
-                        color = Color(0xFFFF453A),
-                        start = Offset(15.dp.toPx(), 0f),
-                        end = Offset(15.dp.toPx(), height),
-                        strokeWidth = 2f
-                    )
-
-                    // Draw Anode (+) plate on the right
-                    drawRect(
-                        color = accentCyan.copy(alpha = 0.2f),
-                        topLeft = Offset(width - 15.dp.toPx(), 0f),
-                        size = Size(15.dp.toPx(), height)
-                    )
-                    drawLine(
-                        color = accentCyan,
-                        start = Offset(width - 15.dp.toPx(), 0f),
-                        end = Offset(width - 15.dp.toPx(), height),
-                        strokeWidth = 2f
-                    )
-
-                    // Draw separator in the middle
-                    drawLine(
-                        color = Color.White.copy(alpha = 0.15f),
-                        start = Offset(width / 2, 0f),
-                        end = Offset(width / 2, height),
-                        strokeWidth = 1f,
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                    )
-
-                    val particles = listOf(
-                        Offset(0.15f, 0.25f), Offset(0.25f, 0.65f), Offset(0.35f, 0.45f), Offset(0.42f, 0.75f),
-                        Offset(0.55f, 0.15f), Offset(0.65f, 0.82f), Offset(0.72f, 0.35f), Offset(0.85f, 0.60f),
-                        Offset(0.20f, 0.12f), Offset(0.32f, 0.88f), Offset(0.48f, 0.38f), Offset(0.60f, 0.52f),
-                        Offset(0.78f, 0.70f), Offset(0.88f, 0.20f)
-                    )
-
-                    particles.forEachIndexed { index, theoretical ->
-                        val driftSpeed = if (isRepairing) 4.0f else 1.0f
-                        val offsetRatio = (theoretical.x + pulseFloat * driftSpeed) % 0.8f + 0.1f
-                        val xPos = width * offsetRatio
-                        val yPos = height * theoretical.y
-
-                        val isFailedNode = index % 3 == 0
-                        val isNodeHealed = isRepairing && (progress >= (index.toFloat() / particles.size))
-                        val nodeColor = if (isFailedNode && !isNodeHealed) {
-                            Color(0xFFFF453A)
-                        } else {
-                            accentCyan
-                        }
-
-                        drawCircle(
-                            color = nodeColor.copy(alpha = 0.2f),
-                            radius = if (isFailedNode && !isNodeHealed) 10.dp.toPx() else 8.dp.toPx(),
-                            center = Offset(xPos, yPos)
-                        )
-
-                        drawCircle(
-                            color = nodeColor,
-                            radius = 3.dp.toPx(),
-                            center = Offset(xPos, yPos)
-                        )
-                    }
-
-                    if (isRepairing) {
-                        val waveX = width * progress
-                        drawLine(
-                            color = chargerAmber.copy(alpha = 0.6f),
-                            start = Offset(waveX, 0f),
-                            end = Offset(waveX, height),
-                            strokeWidth = 4.dp.toPx()
-                        )
-                        drawRect(
-                            color = chargerAmber.copy(alpha = 0.08f),
-                            topLeft = Offset(0f, 0f),
-                            size = Size(waveX, height)
-                        )
-                    }
-                }
-
-                Text(
-                    text = "CAT (-)",
-                    color = Color(0xFFFF453A).copy(alpha = 0.7f),
-                    fontSize = 8.sp,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 25.dp, top = 6.dp)
-                )
-
-                Text(
-                    text = "ANO (+)",
-                    color = accentCyan.copy(alpha = 0.7f),
-                    fontSize = 8.sp,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(end = 25.dp, top = 6.dp)
-                )
-            }
-        }
-    }
-}
 
 val textTerminalMuted = Color(0xFFA0AABF)
 
@@ -2379,19 +1849,18 @@ fun AppSnifferSection(
             val realAppsList = mutableListOf<SnifferApp>()
             try {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val installed = pm.getInstalledPackages(0)
-                    for (pkg in installed) {
+                    val installed = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
+                    for (appInfo in installed) {
                         try {
-                            val appInfo = pkg.applicationInfo
-                            if (appInfo != null && (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0 && 
-                                pkg.packageName != context.packageName) {
+                            if ((appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0 && 
+                                appInfo.packageName != context.packageName) {
                                 
                                 val label = appInfo.loadLabel(pm).toString()
                                 val saveRate = (12..48).random()
                                 realAppsList.add(
                                     SnifferApp(
                                         label = label,
-                                        packageName = pkg.packageName,
+                                        packageName = appInfo.packageName,
                                         initialDrainScore = if (appLanguage == "ar") "استهلاك طاقة نشط بالخلفية" else "Active power consumption trace",
                                         initialDrainIcon = "⚡",
                                         estimatedSavingsMa = saveRate,
@@ -2434,14 +1903,6 @@ fun AppSnifferSection(
                     "🔒 [Real Hibernate] Halted background threads for ${app.label}: saved ~${app.estimatedSavingsMa}mA current protecting lithium core."
                 }
                 com.example.service.HyperChargeService.addLog(logMessage)
-
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    try {
-                        val notification = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
-                        val r = android.media.RingtoneManager.getRingtone(context, notification)
-                        r.play()
-                    } catch (e: Exception) { e.printStackTrace() }
-                }
 
                 hibernatedPackagesState.value = hibernatedPackagesState.value + app.packageName
             } catch (e: Exception) {

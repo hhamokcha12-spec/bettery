@@ -33,16 +33,9 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
     val preserveBatteryHealth = MutableStateFlow(true)
     val puristAmoledMode = MutableStateFlow(false)
     val batteryChargeLimit = MutableStateFlow(80)
-    val activeAuditState = MutableStateFlow("Tap 'AUDIT CELL' in console to initiate deep dynamic testing sequence...")
-    val isRepairing = MutableStateFlow(false)
-    val repairProgress = MutableStateFlow(0f)
-    val repairStatus = MutableStateFlow("Awaiting repair initialization...")
 
     // EXCLUSIVE NEW ENTERPRISE FEATURES
     val appLanguage = MutableStateFlow("ar") // "en" for English, "ar" for Arabic
-    val batteryCycles = MutableStateFlow(248)
-    val batteryWear = MutableStateFlow(5.2f) // Wear level (out of 100%)
-    val healthScore = MutableStateFlow(94.8f) // SOH (State of Health)
     val selectedPowerProfile = MutableStateFlow("Balanced") // "Balanced", "Eco", "Gaming"
     val diagnosticReportText = MutableStateFlow("")
 
@@ -72,13 +65,11 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
                     updateBatteryState(intent)
                 }
                 Intent.ACTION_POWER_CONNECTED -> {
-                    HyperChargeService.addLog("🔌 Charger connected! Triggering fast charge optimizations...")
+                    HyperChargeService.addLog("🔌 Charger connected! Monitoring input current...")
                     viewModelScope.launch {
                         if (repository.getSetting("auto_disable_radios", true)) {
-                            HyperChargeService.addLog("⚡ [Optimization] Auto-Optimizing hardware radios for maximum charge current...")
-                            HyperChargeService.addLog("🔧 [Optimizer] Simulating Radio Hibernation to lower chipset thermals.")
-                            HyperChargeService.addLog("⚡ [Governor] Deep Hardware Simulation: Forcing Wakelocks release...")
-                            HyperChargeService.addLog("⚡ [Governor] Active Thermal Control initialized. Safe threshold set to 38.0°C.")
+                            HyperChargeService.addLog("⚡ [Optimization] Auto-Optimizations for charge speed activated.")
+                            HyperChargeService.addLog("⚡ [Governor] Thermal Safeguards active.")
                         }
                     }
                 }
@@ -86,8 +77,7 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
                     HyperChargeService.addLog("🔌 Charger disconnected. Restoring user system configuration...")
                     viewModelScope.launch {
                         if (repository.getSetting("auto_disable_radios", true)) {
-                            HyperChargeService.addLog("🔓 [Optimizer] Restoring radio parameters...")
-                            HyperChargeService.addLog("🔓 [Governor] Wakelocks restriction unlocked.")
+                            HyperChargeService.addLog("🔓 [Optimizer] Restoring parameters...")
                         }
                     }
                 }
@@ -196,9 +186,6 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
             batteryChargeLimit.value = prefs.getInt("battery_charge_limit", 80)
             appLanguage.value = prefs.getString("app_language", "ar") ?: "ar"
             selectedPowerProfile.value = prefs.getString("selected_power_profile", "Balanced") ?: "Balanced"
-            batteryCycles.value = prefs.getInt("battery_cycles", 248)
-            batteryWear.value = prefs.getFloat("battery_wear", 5.2f)
-            healthScore.value = prefs.getFloat("health_score", 94.8f)
             HyperChargeService.isExtremeChargingActive.value = prefs.getBoolean("is_extreme_charging_active", false)
         }
 
@@ -330,103 +317,7 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun runBatteryChemicalAudit() {
-        viewModelScope.launch {
-            activeAuditState.value = "Initializing Chemical Ion Balance audit..."
-            HyperChargeService.addLog("🧪 Running Core Cell Integrity Chemical Audit Matrix...")
-            
-            kotlinx.coroutines.delay(1000)
-            activeAuditState.value = "Calibrating electrolyte expansion coefficient..."
-            HyperChargeService.addLog("🧪 [Audit] [1/4] Calculated electrolyte thermal expansion: OK")
-            
-            kotlinx.coroutines.delay(1000)
-            activeAuditState.value = "Measuring dynamic Ohmic internal impedance..."
-            HyperChargeService.addLog("🧪 [Audit] [2/4] Internal Cell Resistance standard: ~32mΩ (Ultra Balanced)")
-            
-            kotlinx.coroutines.delay(1000)
-            activeAuditState.value = "Analyzing fast-charge ion degradation speed..."
-            HyperChargeService.addLog("🧪 [Audit] [3/4] Ion flow speed coefficient: 98.4% (Excellent)")
-            
-            kotlinx.coroutines.delay(1000)
-            activeAuditState.value = "Finalizing diagnostic health summary..."
-            HyperChargeService.addLog("🛡️ [Audit] [4/4] Battery state healthy. No volumetric anomaly detected.")
-            activeAuditState.value = "Audit Complete. Score: 98% (Extremely stable core cellular matrix)"
-        }
-    }
 
-    fun runBatteryRepair() {
-        if (isRepairing.value) return
-        viewModelScope.launch {
-            val isAr = appLanguage.value == "ar"
-            isRepairing.value = true
-            repairProgress.value = 0f
-            repairStatus.value = if (isAr) "تهيئة الفحص العميق للخلايا..." else "Initializing deep cell scan..."
-            HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] بدء دور الفحص والمعايرة المتكاملة..." else "🔧 [Repair] Initiating Deep Battery Calibration...")
-            kotlinx.coroutines.delay(1200)
-
-            repairProgress.value = 0.2f
-            repairStatus.value = if (isAr) "البحث عن التغيرات المفاجئة والجهد العالي الشاذ..." else "Scanning for irregular voltage spikes..."
-            HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] فحص الجهد الداخلي للخلايا... مستقر." else "🔧 [Repair] Scanning core voltage... OK.")
-            kotlinx.coroutines.delay(1500)
-
-            repairProgress.value = 0.4f
-            repairStatus.value = if (isAr) "تصفح ومسح ملفات إحصائيات البطارية الافتراضية المؤقتة..." else "Clearing cached Android BatteryStats..."
-            HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] تفريغ وتصفير ملف batterystats.bin (محاكاة)..." else "🔧 [Repair] Purging batterystats.bin (Virtual wipe)...")
-            kotlinx.coroutines.delay(1800)
-
-            repairProgress.value = 0.6f
-            repairStatus.value = if (isAr) "إعادة عيار وبلمرة أيونات كيمياء الليثيوم..." else "Recalibrating charging capacity threshold..."
-            HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] موازنة سعات الشحن 0-100%..." else "🔧 [Repair] Re-aligning 0-100% capacity parameters...")
-            kotlinx.coroutines.delay(1500)
-
-            repairProgress.value = 0.8f
-            repairStatus.value = if (isAr) "قتل العمليات الخفية المستنزفة في الخلفية وفحص الطاقة الحقيقية..." else "Force killing background operations & scanning Real Power..."
-            HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] تعطيل الأنشطة الميتة ومخففات المعالج..." else "🔧 [Repair] Halting extreme wakelocks & orphaned processes...")
-            
-            // Real interaction - Activity Manager cleanup on IO thread to prevent ANRs
-            try {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val am = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                    val pm = getApplication<Application>().packageManager
-                    val packages = pm.getInstalledPackages(0)
-                    var killedCount = 0
-                    for (packageInfo in packages) {
-                        try {
-                            val appInfo = packageInfo.applicationInfo
-                            if (appInfo != null && packageInfo.packageName != getApplication<Application>().packageName && 
-                                (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) {
-                                am.killBackgroundProcesses(packageInfo.packageName)
-                                killedCount++
-                            }
-                        } catch (pkgEx: Exception) {
-                            pkgEx.printStackTrace()
-                        }
-                    }
-                    HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] تم القضاء على $killedCount تطبيق يستهلك البطارية في الخلفية (تنظيف فعلي)!" else "🔧 [Repair] Killed $killedCount background rogue apps (Real Cleanup)!")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            
-            kotlinx.coroutines.delay(2000)
-
-            repairProgress.value = 1.0f
-            
-            // Calibrate metrics in reality and save in shared prefs!
-            val prefs = getApplication<Application>().getSharedPreferences("hypercharge_prefs", Context.MODE_PRIVATE)
-            healthScore.value = 99.4f
-            batteryWear.value = 0.6f
-            prefs.edit().putFloat("health_score", 99.4f).putFloat("battery_wear", 0.6f).apply()
-
-            repairStatus.value = if (isAr) "تمت معايرة البطارية بنجاح واسترداد الكفاءة!" else "Battery calibration & repair completed successfully."
-            HyperChargeService.addLog(if (isAr) "🔧 [إصلاح] اكتمال المعايرة 100%. تم رفع كفاءة الخلايا إلى 99.4%!" else "🔧 [Repair] Calibration Sequence 100% Complete. Cell optimized to 99.4%!")
-            kotlinx.coroutines.delay(2500)
-
-            isRepairing.value = false
-            repairProgress.value = 0f
-            repairStatus.value = if (isAr) "توزيع الشحن الأمثل مفعل. تم إصلاح البطارية." else "Last repair successful. Battery optimized."
-        }
-    }
 
     fun setAppLanguage(lang: String) {
         appLanguage.value = lang
@@ -478,87 +369,9 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun generateBatteryCertificate() {
-        val count = batteryCycles.value
-        val wear = batteryWear.value
-        val health = healthScore.value
-        val currentTemp = liveTemperature.value
-        val isAr = appLanguage.value == "ar"
-        
-        val text = if (isAr) {
-            """
-            ===========================================
-               شهادة تفصيلية معتمدة لعيار وصحة الخلايا كيميائياً  
-            ===========================================
-            الشركة الصانعة الحوسبية: HyperCharge Engine v3.5
-            الترخيص والاعتماد: سليم وخالٍ من أي انتفاخ أيوني
-            حالة المعاير الداخلي: تمت المزامنة الكيميائية
-            
-            [المؤشرات الحيوية المتطورة للخلية]
-            -------------------------------------------
-            * كفاءة تجميع الأيونات (SOH): $health%
-            * كشاف الاهتراء والضعف (Wear Index): $wear%
-            * إجمالي دورات الشحن الكلية: $count دورة
-            * درجة حرارة الحوض الكيميائي: $currentTemp°C
-            * المقاومة الداخلية للأوم (IR): ~32mΩ (ممتازة)
-            * استقرار القطبين الموجب والسالب: 100% متزن
-            
-            [توصيات المحرك للأفضيلية والاستدامة]
-            -------------------------------------------
-            تظهر كيمياء الخلية استقراراً تاماً ومستويات ممتازة بعد عملية الإصلاح والمعايرة. يوصى بترك ميزة "الشحن المحدود الذكي" مفعلة لزيادة عمر دورات البطارية بنسبة 45%.
-            ===========================================
-            """.trimIndent()
-        } else {
-            """
-            ===========================================
-               OFFICIAL LITHIUM-ION CALIBRATION CERTIFICATE  
-            ===========================================
-            Computing Engine: HyperCharge Enterprise v3.5
-            Licence State: CALIBRATED & STABILIZED
-            Ion Calibration Status: Fully Synchronized
-            
-            [ADVANCED CHEMICAL METRICS]
-            -------------------------------------------
-            * State of Health (SOH Index): $health%
-            * Volumetric Degradation Rate: $wear%
-            * Total Charge/Discharge Cycles: $count cycles
-            * Core Electrolyte Temp: $currentTemp°C
-            * Ohmic Internal Resistance: ~32mΩ (Optimal)
-            * Anode-Cathode Symmetry Index: 100% Symmetric
-            
-            [CORE PROTECTION RECOMMENDATION]
-            -------------------------------------------
-            Electro-chemical properties are in pristine state. Keep the 'Smart Limit Shield' active to increase lithium life longevity by up to 45%.
-            ===========================================
-            """.trimIndent()
-        }
-        diagnosticReportText.value = text
-        if (isAr) {
-            HyperChargeService.addLog("🛡️ تم بنجاح استخراج شهادة عيار وصحة الخلايا المعتمدة كيميائياً!")
-        } else {
-            HyperChargeService.addLog("🛡️ Electro-chemical SOH status certificate successfully issued!")
-        }
-    }
 
-    fun simulateHeavyChargeChargeCycle() {
-        viewModelScope.launch {
-            HyperChargeService.addLog("🧪 Simulating Custom Diagnostic Run...")
-            // Create a fake historic charge session to represent past stats
-            val session = ChargeSession(
-                startTime = System.currentTimeMillis() - 7200000,
-                endTime = System.currentTimeMillis() - 120000,
-                startBatteryLevel = 20,
-                endBatteryLevel = 85,
-                maxTemp = 36.5f,
-                chargerType = "Fast AC Adaptive",
-                energyUsedWh = 18.25f,
-                averageCurrentMa = 3450f,
-                healthAtSession = "Premium Health"
-            )
-            repository.insertSession(session)
-            HyperChargeService.addLog("✅ Diagnostic Session recorded successfully!")
-        }
-    }
+
+
 
     fun setExtremeChargingActive(value: Boolean) {
         viewModelScope.launch {
