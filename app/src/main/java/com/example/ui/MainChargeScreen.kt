@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,7 +54,9 @@ fun getLabel(key: String, lang: String): String {
         "title" to "هايبر تشارج - محرك المعايرة",
         "subtitle" to "إصدار المؤسسات والذكاء المطلق",
         "tab_engine" to "محرك الأيونات",
+        "tab_analytics" to "تحليلات الطاقة",
         "tab_schedules" to "ملفات الطاقة",
+        "tab_hardware" to "العتاد (Profiler)",
         "tab_diagnostics" to "المعايرة والنواة",
         "lang_switch" to "English UI",
         "status_charging" to "يتم الشحن الآن بفاعلية قصوى",
@@ -126,7 +129,9 @@ fun getLabel(key: String, lang: String): String {
         "title" to "HyperCharge Enterprise",
         "subtitle" to "Ultimate AI & Calibration Edition",
         "tab_engine" to "Engine Shield",
+        "tab_analytics" to "Analytics",
         "tab_schedules" to "Power Profiles",
+        "tab_hardware" to "Hardware Scope",
         "tab_diagnostics" to "Core Diagnostics",
         "lang_switch" to "العربية",
         "status_charging" to "Active Fast Charging",
@@ -492,8 +497,8 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                 NavigationBarItem(
                     selected = activeTab == 1,
                     onClick = { activeTab = 1 },
-                    icon = { Icon(Icons.Default.Refresh, contentDescription = "Schedules") },
-                    label = { Text(getLabel("tab_schedules", appLanguage)) },
+                    icon = { Icon(Icons.Default.Star, contentDescription = "Analytics") },
+                    label = { Text(getLabel("tab_analytics", appLanguage), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = accentCyan,
                         selectedTextColor = accentCyan,
@@ -505,8 +510,34 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                 NavigationBarItem(
                     selected = activeTab == 2,
                     onClick = { activeTab = 2 },
+                    icon = { Icon(Icons.Default.Refresh, contentDescription = "Schedules") },
+                    label = { Text(getLabel("tab_schedules", appLanguage), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = accentCyan,
+                        selectedTextColor = accentCyan,
+                        indicatorColor = cardBg,
+                        unselectedIconColor = textMuted,
+                        unselectedTextColor = textMuted
+                    )
+                )
+                NavigationBarItem(
+                    selected = activeTab == 3,
+                    onClick = { activeTab = 3 },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Hardware") },
+                    label = { Text(getLabel("tab_hardware", appLanguage), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = accentCyan,
+                        selectedTextColor = accentCyan,
+                        indicatorColor = cardBg,
+                        unselectedIconColor = textMuted,
+                        unselectedTextColor = textMuted
+                    )
+                )
+                NavigationBarItem(
+                    selected = activeTab == 4,
+                    onClick = { activeTab = 4 },
                     icon = { Icon(Icons.Default.Warning, contentDescription = "Kernels") },
-                    label = { Text(getLabel("tab_diagnostics", appLanguage)) },
+                    label = { Text(getLabel("tab_diagnostics", appLanguage), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = accentCyan,
                         selectedTextColor = accentCyan,
@@ -628,7 +659,15 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                     healthScore = healthScore,
                     selectedPowerProfile = selectedPowerProfile
                 )
-                1 -> PowerAISchedules(
+                1 -> PowerAnalyticsSection(
+                    recentSamples = recentSamples,
+                    appLanguage = appLanguage,
+                    cardBg = cardBg,
+                    accentCyan = accentCyan,
+                    thermalCrimson = thermalCrimson,
+                    textMuted = textMuted
+                )
+                2 -> PowerAISchedules(
                     autoDisableRadios = autoDisableRadios,
                     preventOverheat = preventOverheat,
                     preserveBatteryHealth = preserveBatteryHealth,
@@ -642,7 +681,14 @@ fun MainChargeScreen(viewModel: ChargeViewModel) {
                     appLanguage = appLanguage,
                     selectedPowerProfile = selectedPowerProfile
                 )
-                2 -> KernelDiagnosticsConsole(
+                3 -> HardwareProfilerSection(
+                    cpuStatus = cpuStatus,
+                    cardBg = cardBg,
+                    accentCyan = accentCyan,
+                    textMuted = textMuted,
+                    appLanguage = appLanguage
+                )
+                4 -> KernelDiagnosticsConsole(
                     cpuStatus = cpuStatus,
                     wakelockStatus = wakelockStatus,
                     logs = logs,
