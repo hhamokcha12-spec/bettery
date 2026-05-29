@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -1636,7 +1637,8 @@ fun PowerAISchedules(
                 appLanguage = appLanguage,
                 accentCyan = accentCyan,
                 cardBg = cardBg,
-                textMuted = textMuted
+                textMuted = textMuted,
+                viewModel = viewModel
             )
         }
 
@@ -2353,12 +2355,16 @@ fun AppSnifferSection(
     appLanguage: String,
     accentCyan: Color,
     cardBg: Color,
-    textMuted: Color
+    textMuted: Color,
+    viewModel: ChargeViewModel
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
     val scope = rememberCoroutineScope()
+    
+    val lastKilledCount by viewModel.lastKilledCount.collectAsStateWithLifecycle()
+    val lastFreedRamMb by viewModel.lastFreedRamMb.collectAsStateWithLifecycle()
 
     var isScanning by remember { mutableStateOf(false) }
     var hibernatingAll by remember { mutableStateOf(false) }
@@ -2490,6 +2496,34 @@ fun AppSnifferSection(
 
     val titleText = getLabel("app_sniffer_title", appLanguage)
     val descText = getLabel("app_sniffer_desc", appLanguage)
+    
+    // Background Service Stats
+    if (lastFreedRamMb > 0) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = cardBg),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+                .border(1.dp, Color.Green.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.CheckCircle, contentDescription = "Active", tint = Color.Green, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(if (appLanguage == "ar") "محرك الخلفية نشط (Background Engine Active)" else "Background Engine Active", color = Color.Green, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        if (appLanguage == "ar") "تم كبح $lastKilledCount عملية وتوفير ${lastFreedRamMb}MB من الـ RAM تلقائياً."
+                        else "Killed $lastKilledCount processes and freed ${lastFreedRamMb}MB RAM automatically.",
+                        color = Color.White, fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = cardBg),

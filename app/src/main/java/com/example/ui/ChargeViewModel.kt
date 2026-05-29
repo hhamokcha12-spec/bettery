@@ -60,6 +60,8 @@ class ChargeViewModel(application: Application) : AndroidViewModel(application) 
     val liveCpuCoreStatus: StateFlow<String> = HyperChargeService.liveCpuCoreStatus
     val liveActivityLogs: StateFlow<List<String>> = HyperChargeService.liveActivityLogs
     val isExtremeChargingActive: StateFlow<Boolean> = HyperChargeService.isExtremeChargingActive
+    val lastKilledCount: StateFlow<Int> = HyperChargeService.lastKilledCount
+    val lastFreedRamMb: StateFlow<Long> = HyperChargeService.lastFreedRamMb
 
     private var isReceiverRegistered = false
 
